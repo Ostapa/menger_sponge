@@ -3,31 +3,45 @@ function init() {
     let stats = new Stats();
     document.body.appendChild(stats.domElement);
 
-    // setup 2 lights 
-    let leftLight = getSpotLight(1, 'rgb(255, 220, 180)');
-    let rightLight = getSpotLight(1, 'rgb(255, 220, 180)');
-    let bottomLight = getPointLight(.33, 'rgb(255, 220, 180)');
+   
 
-    leftLight.position.x = -5;
-    leftLight.position.y = 15;
-    leftLight.position.z = -4;
+    let box = getBox(0, 0, 0, 30, new THREE.MeshPhongMaterial({ color: 'rgb(51, 51, 51)', wireframe: true }));
+    box.name = 'box';
 
-    rightLight.position.x = 5;
-    rightLight.position.y = 15;
-    rightLight.position.z = -4;
+    let spongeList = [];
+    spongeList.push(box);
 
-    bottomLight.position.x = 0;
-    bottomLight.position.y = 10;
-    bottomLight.position.z = 0;
+    spongeList = generateBoxes(spongeList, 2);
 
-    scene.add(leftLight, rightLight, bottomLight);
+    spongeList.forEach((box) => {
+        scene.add(box);
+    });
+
+     // setup 2 lights 
+     let leftLight = getSpotLight(1, 'rgb(255, 220, 180)');
+     let rightLight = getSpotLight(1, 'rgb(255, 220, 180)');
+     let bottomLight = getPointLight(.33, 'rgb(255, 220, 180)');
+ 
+     leftLight.position.x = -15;
+     leftLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
+     leftLight.position.z = -4;
+ 
+     rightLight.position.x = 15;
+     rightLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
+     rightLight.position.z = -4;
+ 
+     bottomLight.position.x = 0;
+     bottomLight.position.y = 10;
+     bottomLight.position.z = 0;
+ 
+     scene.add(leftLight, rightLight, bottomLight);
 
     // setup camera 
     let cameraGroup = new THREE.Group();
     let camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 1000);
     camera.position.x = 0;
-    camera.position.y = 15;
-    camera.position.z = 50;
+    camera.position.y = 45;
+    camera.position.z = 100;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     cameraGroup.add(camera);
     cameraGroup.name = 'cameraGroup';
@@ -46,6 +60,53 @@ function init() {
     update(renderer, scene, camera, stats, controls);
 
     return scene;
+}
+
+function getBox(x, y, z, size, material) {
+    let box = new THREE.BoxGeometry(size, size, size);
+    let boxObj = new THREE.Mesh(box, material);
+    boxObj.castShadow = true;
+    boxObj.position.x = x;
+    boxObj.position.y = y;
+    boxObj.position.z = z;
+    return boxObj;
+}
+
+function generateBoxes(spongeList, n) {
+    for (let i = 0; i < n; i++) {
+        let next = [];
+        spongeList.forEach((box) => {
+            let temp = generateBox(box, box.geometry.parameters.width);
+            temp.forEach((box) => {
+                next.push(box);
+            });
+        });
+        spongeList = next;
+    }
+    return spongeList;
+}
+
+// function to generate boxes 
+function generateBox(box, size) {
+    let totalBoxes = [];
+    let n = 0;
+    for (let x = -1; x < 2; x++) {
+        for (let y = -1; y < 2; y++) {
+            for (let z = -1; z < 2; z++) {
+                let sum = Math.abs(x) + Math.abs(y) + Math.abs(z);
+                let newSize = size / 3;
+                if(sum > 1) {
+                    let boxObj = getBox(
+                        box.position.x + x * newSize,
+                        box.position.y + y * newSize,
+                        box.position.z + z * newSize, newSize,
+                        new THREE.MeshPhongMaterial({ color: 'rgb(255, 255, 255)'}));
+                    totalBoxes.push(boxObj);
+                }
+            }
+        }
+    }
+    return totalBoxes;
 }
 
 function getPointLight(intensity, color) {

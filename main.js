@@ -1,9 +1,8 @@
 function init() {
     let scene = new THREE.Scene();
     let stats = new Stats();
+    let gui = new dat.GUI();
     document.body.appendChild(stats.domElement);
-
-   
 
     let box = getBox(0, 0, 0, 30, new THREE.MeshPhongMaterial({ color: 'rgb(51, 51, 51)', wireframe: true }));
     box.name = 'box';
@@ -11,37 +10,50 @@ function init() {
     let spongeList = [];
     spongeList.push(box);
 
-    spongeList = generateBoxes(spongeList, 2);
+    let guiControls = new function () {
+        this.iterations = 0;
+    }
 
+    let spongeGroup = new THREE.Group();
+    spongeGroup.name = 'sponge';
+    spongeList = generateBoxes(spongeList, 2);
     spongeList.forEach((box) => {
-        scene.add(box);
+        spongeGroup.add(box);
     });
 
-     // setup 2 lights 
-     let leftLight = getSpotLight(1, 'rgb(255, 220, 180)');
-     let rightLight = getSpotLight(1, 'rgb(255, 220, 180)');
-     let bottomLight = getPointLight(.33, 'rgb(255, 220, 180)');
- 
-     leftLight.position.x = -15;
-     leftLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
-     leftLight.position.z = -4;
- 
-     rightLight.position.x = 15;
-     rightLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
-     rightLight.position.z = -4;
- 
-     bottomLight.position.x = 0;
-     bottomLight.position.y = 10;
-     bottomLight.position.z = 0;
- 
-     scene.add(leftLight, rightLight, bottomLight);
+    scene.add(spongeGroup);
+
+    // setup 2 lights 
+    let leftLight = getSpotLight(1, 'rgb(51, 255, 255)');
+    let rightLight = getSpotLight(1, 'rgb(255, 51, 51)');
+    let bottomLight = getPointLight(.33, 'rgb(255, 220, 180)');
+    let ambientLight = getAmbientLight(.5);
+
+    leftLight.position.x = -15;
+    leftLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
+    leftLight.position.z = -4;
+
+    rightLight.position.x = 15;
+    rightLight.position.y = spongeList[spongeList.length - 1].position.y + 15;
+    rightLight.position.z = -4;
+
+    bottomLight.position.x = 0;
+    bottomLight.position.y = 10;
+    bottomLight.position.z = 0;
+
+    scene.add(leftLight, rightLight, bottomLight, ambientLight);
+
+    let plane = getPlane(100);
+    plane.position.y = -30;
+    plane.rotation.x = Math.PI / 2;
+    scene.add(plane);
 
     // setup camera 
     let cameraGroup = new THREE.Group();
     let camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 1000);
     camera.position.x = 0;
     camera.position.y = 45;
-    camera.position.z = 100;
+    camera.position.z = 150;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     cameraGroup.add(camera);
     cameraGroup.name = 'cameraGroup';
@@ -95,12 +107,12 @@ function generateBox(box, size) {
             for (let z = -1; z < 2; z++) {
                 let sum = Math.abs(x) + Math.abs(y) + Math.abs(z);
                 let newSize = size / 3;
-                if(sum > 1) {
+                if (sum > 1) {
                     let boxObj = getBox(
                         box.position.x + x * newSize,
                         box.position.y + y * newSize,
                         box.position.z + z * newSize, newSize,
-                        new THREE.MeshPhongMaterial({ color: 'rgb(255, 255, 255)'}));
+                        new THREE.MeshPhongMaterial({ color: 0xffffff }));
                     totalBoxes.push(boxObj);
                 }
             }
@@ -108,6 +120,7 @@ function generateBox(box, size) {
     }
     return totalBoxes;
 }
+
 
 function getPointLight(intensity, color) {
     let light = new THREE.PointLight(color, intensity);
@@ -131,7 +144,29 @@ function getSpotLight(intensity, color) {
     return light;
 }
 
+function getAmbientLight(intensity) {
+    let light = new THREE.AmbientLight('rgb(10, 30, 50)', intensity);
+    return light;
+}
+
+function getPlane(size) {
+    let geometry = new THREE.PlaneGeometry(size, size);
+    let material = new THREE.MeshPhongMaterial({
+        color: 'rgb(120,120,120)',
+        side: THREE.DoubleSide
+    });
+    let mesh = new THREE.Mesh(geometry, material);
+    mesh.receiveShadow = true;
+    return mesh;
+}
+
 function update(renderer, scene, camera, stats, controls) {
+
+    let sponge = scene.getObjectByName('sponge');
+    sponge.rotation.x += .01;
+    sponge.rotation.y += .01;
+    sponge.rotation.z += .01;
+
     renderer.render(scene, camera);
     controls.update();
     stats.update();
